@@ -1,9 +1,10 @@
 # PR：新增插件 jiusi.statistic
 
 > 提给 [l0ng-ai/openidea-plugins](https://github.com/l0ng-ai/openidea-plugins) 的 PR 正文草稿。
-> publisher `jiusi` 已在 registry 中，本次 PR 只需提交 `plugins/jiusi.statistic.toml`。
+> publisher `jiusi` 已在 registry 中，本地 `publishers/jiusi.toml` 与官方条目逐字一致，
+> 所以 PR 的实际差异只有新增的 `plugins/jiusi.statistic.toml`。
 > 顺序：先把源码推到 `jiusi666/openidea-statistic`，发 `v0.1.0` Release 并上传
-> `jiusi.statistic-0.1.0.oiplugin`，再跑 `python scripts/open_pr.py`。
+> `jiusi.statistic-0.1.0.oiplugin`，再跑 `python scripts/open_pr.py`。以上三步均已执行。
 
 ## 标题
 

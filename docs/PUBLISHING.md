@@ -55,8 +55,9 @@ python "$P/scripts/local_install.py" status --project "$P"
    `dist/jiusi.statistic-0.1.0.oiplugin`（**文件名不能改**），必须点 Publish，
    不能存草稿。
 4. `python scripts/check_release.py` 下载附件、核 sha256、验签、比对本地字节。
-5. 把 `publish/plugins/jiusi.statistic.toml` 复制进 fork 的 `plugins/`，正文用
-   `publish/PR.md`；`publish/publishers/jiusi.toml` **不要提交**，官方 registry 已有。
+5. `open_pr.py` 会同时带上 `publishers/jiusi.toml` 和 `plugins/jiusi.statistic.toml`；
+   本地的 publisher 条目与官方逐字一致，所以 PR 的实际差异只有新增的插件条目。正文用
+   `publish/PR.md`。
 6. `python scripts/open_pr.py --dry-run` 看计划，再 `python scripts/open_pr.py` 提 PR。
    CI 会下载附件、核 sha256、验签并跑 `openidea-plugin check`。
 
