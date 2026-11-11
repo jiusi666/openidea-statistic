@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>代码统计</title>
+<style>
+  :root {
+    --bg: #ffffff; --solid: #ffffff; --fg: #1f2328; --muted: #6b7280;
+    --line: #e5e7eb; --accent: #2563eb; --accent-fg: #ffffff;
+    --soft: #f6f8fa; --bar: #2563eb; --danger: #c0392b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1f1f1f; --solid: #2b2b2b; --fg: #e6e6e6; --muted: #9aa0a6;
+      --line: #3a3a3a; --accent: #4c8dff; --accent-fg: #0b1220;
+      --soft: #292929; --bar: #4c8dff; --danger: #ff7b72;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
+    font: 13px/1.5 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
+  body { display: flex; flex-direction: column; }
+  header { display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+    border-bottom: 1px solid var(--line); }
+  header h1 { margin: 0; font-size: 13px; font-weight: 600; white-space: nowrap; }
+  #project { color: var(--muted); font-size: 12px; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; }
+  #status { margin-left: auto; color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .toolbar { display: flex; flex-direction: column; align-items: stretch; gap: 8px;
+    padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  .toolbar-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .toolbar-label { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  button, select, input { font: inherit; color: var(--fg); background: var(--solid);
+    border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; }
+  button { cursor: pointer; white-space: nowrap; }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .55; cursor: default; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+  .segmented { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 2px;
+    padding: 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+  .segmented button { flex: 0 0 auto; border: 0; border-radius: 5px;
+    background: transparent; color: var(--muted); padding: 3px 10px; }
+  .segmented button:hover:not(:disabled) { border-color: transparent; color: var(--fg); }
+  .segmented button.on { background: var(--soft); color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent); }
+  #sort { flex: 0 0 auto; }
+  #exclude { flex: 1 1 auto; min-width: 0; }
+  .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px; padding: 10px 12px; }
+  .card { background: var(--soft); border: 1px solid var(--line); border-radius: 8px;
+    padding: 7px 10px; min-width: 0; min-height: 58px; }
+  .card .k { color: var(--muted); font-size: 11px; }
+  .card .v { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .table-wrap { flex: 0 1 auto; min-height: 0; max-height: 60vh; overflow: auto;
+    border-top: 1px solid var(--line); }
+  .table-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
+  .table-wrap::-webkit-scrollbar-track { background: transparent; }
+  .table-wrap::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+  .table-wrap::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+  .table-wrap::-webkit-scrollbar-corner { background: transparent; }
+  table { width: 100%; min-width: 470px; table-layout: fixed;
+    border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 6px 4px; text-align: right; border-bottom: 1px solid var(--line);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  th:nth-child(1), td:nth-child(1) { width: 20%; text-align: left; position: sticky;
+    left: 0; background: var(--bg); }
+  th:nth-child(2) { width: 9%; }
+  th:nth-child(3) { width: 12%; }
+  th:nth-child(4) { width: 12%; }
+  th:nth-child(5) { width: 10%; }
+  th:nth-child(6) { width: 10%; }
+  th:nth-child(7) { width: 13%; }
+  th:nth-child(8) { width: 14%; }
+  th { color: var(--muted); font-weight: 500; position: sticky; top: 0;
+    background: var(--bg); z-index: 1; }
+  th:nth-child(1) { z-index: 2; }
+  .name { display: inline-block; max-width: 100%; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+  .pct-cell { position: relative; }
+  .pct-bar { display: block; width: 100%; height: 12px; border-radius: 3px;
+    background: var(--line); overflow: hidden; }
+  .pct-bar i { display: block; height: 100%; background: var(--bar); }
+  .pct-num { position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+    color: var(--fg); font-size: 10px; line-height: 1;
+    background: var(--bg); padding: 0 2px; border-radius: 2px; }
+  .empty { padding: 26px 12px; color: var(--muted); text-align: center; }
+  footer { padding: 8px 12px; border-top: 1px solid var(--line); color: var(--muted);
+    font-size: 12px; }
+  footer .bad { color: var(--danger); }
+  .spacer { flex: 1 1 auto; min-height: 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>代码统计</h1>
+  <span id="project">未连接</span>
+  <span id="status">—</span>
+</header>
+
+<div class="toolbar">
+  <div class="toolbar-row">
+    <button class="primary" id="refresh">刷新</button>
+    <div class="segmented">
+      <button data-group="language" class="on">按语言</button>
+      <button data-group="directory">按目录</button>
+    </div>
+    <select id="sort">
+      <option value="lines">按总行数</option>
+      <option value="code">按代码行</option>
+      <option value="files">按文件数</option>
+      <option value="name">按名称</option>
+    </select>
+  </div>
+  <div class="toolbar-row">
+    <label class="toolbar-label" for="exclude">排除目录</label>
+    <input id="exclude" type="text" placeholder="逗号分隔，失焦后重扫">
+    <button id="resetExclude">恢复默认</button>
+  </div>
+</div>
+
+<div class="cards" id="cards"></div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>分组</th><th>文件</th><th>总行</th><th>代码</th>
+        <th>注释</th><th>空行</th><th>大小</th><th>占比</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+</div>
+
+<footer id="hint"></footer>
+<div class="spacer"></div>
+
+<script>
+(function () {
+  var hasHost = !!(window.openidea && window.openidea.postMessage);
+  var el = {
+    project: document.getElementById('project'),
+    status: document.getElementById('status'),
+    refresh: document.getElementById('refresh'),
+    sort: document.getElementById('sort'),
+    exclude: document.getElementById('exclude'),
+    resetExclude: document.getElementById('resetExclude'),
+    cards: document.getElementById('cards'),
+    rows: document.getElementById('rows'),
+    hint: document.getElementById('hint')
+  };
+  var state = {
+    report: null, group: 'language', sort: 'lines', exclude: '',
+    busy: false, error: null, maxFiles: 20000
+  };
+
+  function send(obj) {
+    if (hasHost) window.openidea.postMessage(JSON.stringify(obj));
+    else localHandle(obj);
+  }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function num(n) { return (Number(n) || 0).toLocaleString('zh-CN'); }
+  function fmtBytes(n) {
+    n = Number(n) || 0;
+    if (n < 1024) return n + ' B';
+    if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+    return (n / 1048576).toFixed(1) + ' MB';
+  }
+  function metric(rows, sort) {
+    return sort === 'files' ? rows.files : sort === 'code' ? rows.lines.code : rows.lines.total;
+  }
+  function sorted(rows, sort) {
+    return (rows || []).slice().sort(function (a, b) {
+      if (sort === 'name') return String(a.key).localeCompare(String(b.key), 'zh-CN');
+      var d = (Number(metric(b, sort)) || 0) - (Number(metric(a, sort)) || 0);
+      return d || String(a.key).localeCompare(String(b.key), 'zh-CN');
+    });
+  }
+
+  function render(s) {
+    state = {
+      report: s.report || null, group: s.group || 'language', sort: s.sort || 'lines',
+      exclude: s.exclude || '', busy: !!s.busy, error: s.error || null,
+      maxFiles: s.maxFiles || 20000
+    };
+    var r = state.report;
+
+    el.status.textContent = state.busy ? '统计中…' : (state.error ? '有错误' : (r ? '本机缓存' : '未统计'));
+    el.project.textContent = r ? r.project : '未连接';
+    el.refresh.disabled = state.busy;
+    el.refresh.textContent = state.busy ? '统计中…' : '刷新';
+    Array.prototype.forEach.call(document.querySelectorAll('.segmented button'), function (b) {
+      b.classList.toggle('on', b.getAttribute('data-group') === state.group);
+    });
+    if (document.activeElement !== el.sort) el.sort.value = state.sort;
+    if (document.activeElement !== el.exclude) el.exclude.value = state.exclude;
+    el.exclude.title = state.exclude || '排除的目录，逗号分隔';
+    el.resetExclude.disabled = state.busy;
+
+    if (!r) {
+      el.cards.innerHTML = '<div class="empty">还没有统计结果，点「刷新」开始。</div>';
+      el.rows.innerHTML = '';
+    } else {
+      var cards = [
+        ['文件', num(r.files)], ['总行数', num(r.lines.total)], ['代码行', num(r.lines.code)],
+        ['注释行', num(r.lines.comment)], ['空行', num(r.lines.blank)], ['大小', fmtBytes(r.bytes)]
+      ];
+      el.cards.innerHTML = cards.map(function (c) {
+        return '<div class="card"><div class="k">' + c[0] + '</div><div class="v">' + c[1] + '</div></div>';
+      }).join('');
+
+      var rows = sorted(state.group === 'directory' ? r.dirs : r.groups, state.sort);
+      var projectLines = Number(r.lines.total) || 0;
+      el.rows.innerHTML = rows.map(function (g) {
+        var p = projectLines > 0 ? ((Number(g.lines.total) || 0) / projectLines) * 100 : 0;
+        var label = p > 0 && p < 0.5 ? '<1' : String(Math.round(p));
+        return '<tr><td title="' + esc(g.key) + '"><span class="name">' + esc(g.key) + '</span></td><td>' +
+          num(g.files) + '</td><td>' +
+          num(g.lines.total) + '</td><td>' + num(g.lines.code) + '</td><td>' +
+          num(g.lines.comment) + '</td><td>' + num(g.lines.blank) + '</td><td>' +
+          fmtBytes(g.bytes) + '</td><td class="pct-cell" title="占项目总行 ' + esc(label) + '%">' +
+          '<span class="pct-bar"><i style="width:' + Math.max(2, p) + '%"></i></span>' +
+          '<span class="pct-num">' + esc(label) + '%</span></td></tr>';
+      }).join('') || '<tr><td colspan="8" class="empty">没有可统计的文件</td></tr>';
+    }
+
+    var bits = [];
+    if (state.error) bits.push('<span class="bad">' + esc(state.error) + '</span>');
+    if (r) {
+      if (r.skipped) bits.push('跳过 ' + num(r.skipped) + ' 个二进制或超大文件');
+      if (r.truncated) bits.push('已达到 ' + num(state.maxFiles) + ' 个文件上限，结果不完整');
+    }
+    bits.push('行分类为启发式识别，不解析字符串字面量；gitignore 排除的文件不计入。');
+    el.hint.innerHTML = bits.join(' · ');
+  }
+
+  function fake() {
+    var groups = [
+      { key: 'fingard-fefs-filehandling', files: 1302, lines: { total: 127011, code: 90751, comment: 20067, blank: 16193 }, bytes: 8074035 },
+      { key: 'Java', files: 1743, lines: { total: 196079, code: 125404, comment: 50326, blank: 20349 }, bytes: 8074035 },
+      { key: 'YAML', files: 900, lines: { total: 29623, code: 29268, comment: 299, blank: 56 }, bytes: 5976883 },
+      { key: 'HTML / XML', files: 226, lines: { total: 17999, code: 16421, comment: 584, blank: 994 }, bytes: 798515 },
+      { key: 'SQL', files: 179, lines: { total: 13199, code: 10781, comment: 1042, blank: 1376 }, bytes: 693862 }
+    ];
+    var dirs = [
+      { key: 'src', files: 8, lines: { total: 2600, code: 2000, comment: 360, blank: 240 }, bytes: 98000 },
+      { key: 'docs', files: 2, lines: { total: 376, code: 240, comment: 56, blank: 80 }, bytes: 15000 },
+      { key: '(根目录)', files: 2, lines: { total: 480, code: 360, comment: 40, blank: 80 }, bytes: 15000 }
+    ];
+    var defaults = '.git,node_modules,target,dist,build,vendor';
+    return {
+      report: {
+        project: 'demo-project', files: 12,
+        lines: { total: 3456, code: 2600, comment: 456, blank: 400 },
+        bytes: 128000, skipped: 18, truncated: false, groups: groups, dirs: dirs
+      },
+      group: state.group, sort: state.sort,
+      exclude: state.exclude || defaults,
+      busy: false, error: null, maxFiles: 20000
+    };
+  }
+
+  function localHandle(obj) {
+    if (obj.type === 'setGroup') state.group = obj.value;
+    if (obj.type === 'setSort') state.sort = obj.value;
+    if (obj.type === 'setExclude') state.exclude = obj.value;
+    if (obj.type === 'resetExclude') state.exclude = '.git,node_modules,target,dist,build,vendor';
+    var f = fake();
+    f.group = state.group; f.sort = state.sort; f.exclude = state.exclude;
+    render(f);
+  }
+
+  el.refresh.addEventListener('click', function () { send({ type: 'refresh' }); });
+  el.sort.addEventListener('change', function () { send({ type: 'setSort', value: el.sort.value }); });
+  el.exclude.addEventListener('change', function () { send({ type: 'setExclude', value: el.exclude.value }); });
+  el.resetExclude.addEventListener('click', function () { send({ type: 'resetExclude' }); });
+  Array.prototype.forEach.call(document.querySelectorAll('.segmented button'), function (b) {
+    b.addEventListener('click', function () {
+      send({ type: 'setGroup', value: b.getAttribute('data-group') });
+    });
+  });
+
+  if (hasHost && window.openidea.onMessage) {
+    window.openidea.onMessage(function (text) {
+      var msg;
+      try { msg = JSON.parse(text); } catch (e) { return; }
+      if (msg.type === 'snapshot') render(msg);
+    });
+    send({ type: 'init' });
+  } else {
+    localHandle({ type: 'init' });
+  }
+})();
+</script>
+</body>
+</html>

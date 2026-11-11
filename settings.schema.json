@@ -1,0 +1,26 @@
+{
+  "properties": {
+    "excludeDirs": {
+      "type": "string",
+      "title": "排除的目录（逗号分隔，匹配路径中的目录段）",
+      "default": ".git,.idea,.vscode,node_modules,target,dist,build,out,bin,obj,vendor,.venv,venv,__pycache__,coverage,.gradle,.next,.nuxt,.cache"
+    },
+    "maxFileBytes": {
+      "type": "number",
+      "title": "单文件最大字节数，超过则跳过行数统计",
+      "default": 2097152,
+      "minimum": 1024,
+      "maximum": 16777216
+    },
+    "includeHidden": {
+      "type": "boolean",
+      "title": "包含隐藏文件与目录",
+      "default": false
+    },
+    "showStatusBar": {
+      "type": "boolean",
+      "title": "在状态栏显示总行数",
+      "default": true
+    }
+  }
+}

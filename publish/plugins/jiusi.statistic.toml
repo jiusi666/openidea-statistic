@@ -1,0 +1,6 @@
+repository = "https://github.com/jiusi666/openidea-statistic"
+
+[[versions]]
+version = "0.1.0"
+package = "https://github.com/jiusi666/openidea-statistic/releases/download/v0.1.0/jiusi.statistic-0.1.0.oiplugin"
+sha256 = "3d5a1a01a8a839d8e1e9b495e82d80d315e468e296f5202440064929e0cb9c56"

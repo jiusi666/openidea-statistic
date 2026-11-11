@@ -1,0 +1,6 @@
+# publisher `jiusi` 已存在于官方 registry，提交首个插件的 PR 时不要重复提交本文件。
+# 这里留一份，是为了让本地打包/校验能核对公钥；私钥仍只在本机。
+name = "九思"
+owners = ["jiusi666"]
+keys = ["HpADCl1YhjtlpM3Wz3kjpk0lWpswFqgaMtmkoL4xwEE="]
+revoked-keys = []
