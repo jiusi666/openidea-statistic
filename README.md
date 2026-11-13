@@ -27,7 +27,10 @@
 
 ## 安装
 
-`Settings › Plugins › Install from Disk`，选 `jiusi.statistic-0.1.0.oiplugin`。
+已上架 OpenIDEA 社区插件市场，当前 0.1.1：
+
+- **市场安装**（推荐）：`Settings › Plugins › Available` 搜索「Statistic」或「代码统计」。
+- **从包安装**：`Settings › Plugins › Install from Disk`，选 `jiusi.statistic-0.1.1.oiplugin`。
 
 首次打开「代码统计」面板会自动扫一次；之后优先显示本机缓存的上一份结果，点「刷新」或状态栏才会重扫。这样打开面板不会每次都卡在扫描上。
 
@@ -73,8 +76,8 @@ Windows 上如果 MSVC 链接器被 Git Bash 的 `link` 抢占，改用 GNU 工�
 ```sh
 python scripts/oiplugin.py check .
 python scripts/oiplugin.py pack . --key .keys/jiusi.key --publisher jiusi \
-  --out dist/jiusi.statistic-0.1.0.oiplugin
-python scripts/oiplugin.py verify dist/jiusi.statistic-0.1.0.oiplugin
+  --out dist/jiusi.statistic-0.1.1.oiplugin
+python scripts/oiplugin.py verify dist/jiusi.statistic-0.1.1.oiplugin
 ```
 
 `jiusi` 这个 publisher 前缀与 registry 里的 `publishers/jiusi.toml` 一致，签名用的是同一把私钥；**不要重新生成密钥**，否则用户会看到签名者变更。
@@ -98,4 +101,20 @@ dist/plugin.wasm       构建产物
 
 ## 上架
 
-流程见 `docs/PUBLISHING.md`：先发 GitHub Release 并上传 `.oiplugin`，再把 `publish/plugins/jiusi.statistic.toml` 加进 `l0ng-ai/openidea-plugins` 并提 PR。CI 会下载附件核对 sha256、验签并跑 `openidea-plugin check`。
+已上架 [OpenIDEA 社区插件市场](https://github.com/l0ng-ai/openidea-plugins)，条目为 `plugins/jiusi.statistic.toml`；条目上的 `suggest` 会让插件出现在含 `pom.xml` / `package.json` / `Cargo.toml` 等构建文件的项目下「Suggested for This Project」。
+
+完整流程见 `docs/PUBLISHING.md`：先发 GitHub Release 并上传 `.oiplugin`，再把 `publish/plugins/jiusi.statistic.toml` 加进 `l0ng-ai/openidea-plugins` 并提 PR。CI 会下载附件核对 sha256、验签并跑 `openidea-plugin check`。
+
+## 路线图
+
+- **0.2.0**：圈复杂度 / 嵌套深度 / 超长方法、文件热度、按目录钻取、排除规则模板、把结果导出成表格文本。仍是 `project.read` + `storage` 两个 Low。
+- **0.3.0**：把每次统计留成本地快照，做「本周 vs 上周」的趋势对比。
+**明确不做**：不联网、不上传统计结果、不做 Git 历史统计、不做代码质量评分。行分类是启发式的，这个口径会一直保持。
+
+## 交流
+
+Java 技术交流 Q 群：700072697
+
+## 许可
+
+Apache-2.0。

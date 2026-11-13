@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1
+
+- 插件介绍补上「欢迎一起参与开发」与 Java 技术交流 Q 群 700072697，安装后在 OpenIDEA 插件详情里可见。
+- registry 条目新增 `suggest`：项目含 `pom.xml` / `package.json` / `Cargo.toml` 等构建文件时，插件出现在市场的「Suggested for This Project」。
+- README 补上架状态、市场安装方式、路线图与群联系方式。
+- 功能与能力未变，仍是 `project.read` + `storage` 两个 Low。
+
 ## 0.1.0
 
 首个版本。

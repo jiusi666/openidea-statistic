@@ -1,33 +1,10 @@
-# 0.1.0
+# Statistic 代码统计 0.1.1
 
-Statistic 代码统计：按语言和目录统计当前项目的代码行数，作为 OpenIDEA 右侧工具窗口运行。只读项目文件，全部在本机计算。
+按语言 / 目录统计项目代码行数的 OpenIDEA 插件。这一版只改介绍与市场的推荐位，功能与能力不变。
 
-## 这一版
+- 插件介绍补上参与开发引导与 Java 技术交流 Q 群 700072697。
+- registry 条目新增 `suggest`，含 `pom.xml` / `package.json` / `Cargo.toml` 等构建文件的项目会在市场看到「Suggested for This Project」。
+- README 补上架状态、市场安装方式、路线图与群联系方式。
+- 能力仍只有 `project.read` + `storage` 两个 Low。
 
-- 按语言 / 一级目录两种分组，统计文件数、总行、代码行、注释行、空行与字节数；占比列显示具体百分比与完整进度条。
-- 面板内切换分组、排序、排除目录、刷新；状态栏显示总行数；命令面板可刷新、切换分组、清除缓存。
-- 设置项：排除目录默认值、单文件最大字节数、是否包含隐藏文件、是否显示状态栏。
-- 扫描走可取消的长任务，跳过二进制与超大文件，20,000 文件上限会提示结果不完整；结果缓存在本机。
-
-## 修复与调整
-
-- 面板排版：工具栏固定两行、卡片统一边框与高度、表格固定列宽自适应（无横向滚动条）、页脚紧跟表格。
-- 行分类为启发式识别，不解析字符串字面量；gitignore 排除的文件不计入。它适合看项目规模，不适合当审计数据。
-
-## 权限
-
-- `project.read`（Low）：只读项目文件，用于列出、读取与计算相对路径。
-- `storage`（Low）：保存上一份统计结果与面板偏好，仅本机。
-
-不联网、不执行任何程序、不写项目文件、不上传任何统计结果。
-
-## 验证
-
-- `cargo test` 19 项通过；`cargo fmt --check` 与 `clippy -D warnings` 零告警。
-- `oiplugin.py check` / `pack` / `verify` 通过；面板脚本 `node --check` 通过；无头 Chrome 深色 / 浅色预览复验。
-
-## 包
-
-- 文件：`jiusi.statistic-0.1.0.oiplugin`
-- sha256：`3d5a1a01a8a839d8e1e9b495e82d80d315e468e296f5202440064929e0cb9c56`
-- 源码：https://github.com/jiusi666/openidea-statistic （Apache-2.0）
+Release 附件：`jiusi.statistic-0.1.1.oiplugin`，源码 Apache-2.0。

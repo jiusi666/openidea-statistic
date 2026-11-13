@@ -1,6 +1,12 @@
 repository = "https://github.com/jiusi666/openidea-statistic"
+suggest = ["pom.xml", "build.gradle", "build.gradle.kts", "package.json", "Cargo.toml", "go.mod", "pyproject.toml"]
 
 [[versions]]
 version = "0.1.0"
 package = "https://github.com/jiusi666/openidea-statistic/releases/download/v0.1.0/jiusi.statistic-0.1.0.oiplugin"
 sha256 = "3d5a1a01a8a839d8e1e9b495e82d80d315e468e296f5202440064929e0cb9c56"
+
+[[versions]]
+version = "0.1.1"
+package = "https://github.com/jiusi666/openidea-statistic/releases/download/v0.1.1/jiusi.statistic-0.1.1.oiplugin"
+sha256 = "db5ded1708ca3a87e99a682140bf32ea8bc8e168a819957e33b1bd5d713d826b"
