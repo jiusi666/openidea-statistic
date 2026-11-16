@@ -519,6 +519,8 @@ pub fn measure(text: &str, spec: Lang) -> Metrics {
     if fam == Family::Indent {
         let mut open: Option<(usize, u32)> = None;
         let mut in_block = false;
+        // 最后一行有效代码的行号，用来给文件末尾还开着的函数收尾。
+        let mut last_code = 0u32;
         for (i, raw) in text.lines().enumerate() {
             let lineno = i as u32 + 1;
             let trimmed = raw.trim();
@@ -533,6 +535,7 @@ pub fn measure(text: &str, spec: Lang) -> Metrics {
             if body.is_empty() {
                 continue;
             }
+            last_code = lineno;
             let indent = indent_width(raw);
             if let Some((base, start)) = open
                 && indent <= base
@@ -546,6 +549,15 @@ pub fn measure(text: &str, spec: Lang) -> Metrics {
             }
             if open.is_none() && is_def_line(body) {
                 open = Some((indent, lineno));
+            }
+        }
+        // 文件在函数体中间就结束了：没有 dedent 行可等，按最后一行收尾。
+        // 长度口径与 dedent 分支一致（`lineno - start` 不含 dedent 行，这里含最后一行）。
+        if let Some((_, start)) = open {
+            let len = last_code.saturating_sub(start) + 1;
+            if len > m.max_fn {
+                m.max_fn = len;
+                m.fn_line = start;
             }
         }
     }
@@ -1042,6 +1054,98 @@ mod tests {
         assert_eq!(m.depth, 3);
         assert_eq!(m.max_fn, 5);
         assert_eq!(m.fn_line, 1);
+    }
+
+    #[test]
+    fn finalizes_indent_function_at_eof() {
+        // 单函数一直开到文件末尾：没有后续 dedent 行也要按 EOF 收尾。
+        let mut text = String::from("def long_function():\n");
+        for _ in 0..65 {
+            text.push_str("    pass\n");
+        }
+        let no_tail = text.trim_end_matches('\n').to_string();
+        for (label, src) in [("无尾随换行", no_tail.clone()), ("有尾随换行", text.clone())] {
+            let m = measure(&src, language_of("a.py"));
+            assert_eq!(m.max_fn, 66, "{label}：66 行");
+            assert_eq!(m.fn_line, 1, "{label}：起始行 1");
+        }
+        // 尾随空行与注释行都不算进函数长度。
+        let trailing = format!("{text}\n# 尾注释\n\n");
+        let m = measure(&trailing, language_of("a.py"));
+        assert_eq!(m.max_fn, 66);
+        assert_eq!(m.fn_line, 1);
+    }
+
+    #[test]
+    fn finalizes_longest_indent_function_at_eof() {
+        // 最长函数在文件末尾，前面还有别的函数：不能只报前面那个。
+        let text = [
+            "def a():",
+            "    pass",
+            "",
+            "def b(x):",
+            "    if x:",
+            "        pass",
+            "    pass",
+            "    pass",
+        ]
+        .join("\n");
+        let m = measure(&text, language_of("a.py"));
+        assert_eq!(m.fn_line, 4, "应该指向 b 的起始行");
+        assert_eq!(m.max_fn, 5, "b 从第 4 行到第 8 行");
+    }
+
+    #[test]
+    fn eof_function_length_matches_dedent_case() {
+        // 同一个函数，后面多一句无关顶层语句不该改变长度与风险分。
+        let body = ["    if x:", "        pass"];
+        let alone = ["def f():", body[0], body[1], ""].join("\n");
+        let followed = ["def f():", body[0], body[1], "done = True", ""].join("\n");
+        let a = measure(&alone, language_of("a.py"));
+        let b = measure(&followed, language_of("a.py"));
+        assert_eq!(a.max_fn, 3, "def 在第 1 行，pass 在第 3 行");
+        assert_eq!(a.max_fn, b.max_fn);
+        assert_eq!(a.fn_line, b.fn_line);
+        let lim = Limits::default();
+        let la = Lines {
+            code: 20,
+            ..Lines::default()
+        };
+        assert_eq!(risk_score(&a, la, &lim), risk_score(&b, la, &lim));
+    }
+
+    #[test]
+    fn eof_badge_threshold_is_reached_like_dedent_case() {
+        // 811 行函数 + 15 个简单 if：文件末尾收尾和后面跟一句顶层语句应当同分，
+        // 不能因为缺少 dedent 行就掉到高风险阈值（45）以下。
+        let build = |tail: bool| {
+            let mut v = vec!["def f():".to_string()];
+            for i in 0..15 {
+                v.push(format!("    if x{i}:"));
+                v.push("        pass".to_string());
+            }
+            while v.len() < 811 {
+                v.push("    pass".to_string());
+            }
+            if tail {
+                v.push("done = True".to_string());
+            }
+            v.join("\n")
+        };
+        let lim = Limits::default();
+        let la = Lines {
+            code: 811,
+            ..Lines::default()
+        };
+        let eof = measure(&build(false), language_of("a.py"));
+        let dedent = measure(&build(true), language_of("a.py"));
+        assert_eq!(eof.max_fn, 811);
+        assert_eq!(eof.fn_line, 1);
+        assert_eq!(eof.max_fn, dedent.max_fn);
+        let s_eof = risk_score(&eof, la, &lim);
+        assert_eq!(s_eof, risk_score(&dedent, la, &lim));
+        assert_eq!(s_eof, 51, "与带 dedent 行时同分");
+        assert!(s_eof >= 45, "默认阈值下应算高风险");
     }
 
     #[test]
