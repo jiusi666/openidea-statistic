@@ -2,6 +2,8 @@
 
 use openidea_plugin::host;
 
+use crate::scan::Limits;
+
 pub const DEFAULT_EXCLUDES: &str = ".git,.idea,.vscode,node_modules,target,dist,build,out,bin,obj,vendor,.venv,venv,__pycache__,coverage,.gradle,.next,.nuxt,.cache";
 
 pub const DEFAULT_MAX_BYTES: usize = 2 * 1024 * 1024;
@@ -13,6 +15,10 @@ pub struct Prefs {
     pub max_file_bytes: usize,
     pub include_hidden: bool,
     pub show_status_bar: bool,
+    /// 是否在项目树上给高风险文件加标记。
+    pub decorate_tree: bool,
+    /// 复杂度 / 超长阈值的分母，同时决定风险分。
+    pub limits: Limits,
 }
 
 impl Prefs {
@@ -22,11 +28,18 @@ impl Prefs {
         let max = host::setting_number("maxFileBytes")
             .map(|n| (n as usize).clamp(1024, MAX_BYTES_CEILING))
             .unwrap_or(DEFAULT_MAX_BYTES);
+        let limits = Limits {
+            file_lines: number("warnFileLines", 50.0, 200_000.0, 800.0) as u64,
+            fn_lines: number("warnFunctionLines", 5.0, 5_000.0, 60.0) as u32,
+            complexity: number("warnComplexity", 1.0, 500.0, 15.0) as u32,
+        };
         Self {
             excludes: parse_excludes(&raw),
             max_file_bytes: max,
             include_hidden: host::setting_bool("includeHidden").unwrap_or(false),
             show_status_bar: host::setting_bool("showStatusBar").unwrap_or(true),
+            decorate_tree: host::setting_bool("decorateTree").unwrap_or(true),
+            limits,
         }
     }
 
@@ -37,6 +50,13 @@ impl Prefs {
         }
         self
     }
+}
+
+/// 读一个带上下限的数字设置，越界就夹紧，读不到就用默认值。
+fn number(key: &str, min: f64, max: f64, fallback: f64) -> f64 {
+    host::setting_number(key)
+        .map(|n| n.clamp(min, max))
+        .unwrap_or(fallback)
 }
 
 pub fn parse_excludes(raw: &str) -> Vec<String> {
@@ -67,6 +87,8 @@ mod tests {
             max_file_bytes: 1234,
             include_hidden: true,
             show_status_bar: false,
+            decorate_tree: false,
+            limits: Limits::default(),
         };
         let over = base.clone().with_override(Some("b, c"));
         assert_eq!(over.excludes, vec!["b", "c"]);

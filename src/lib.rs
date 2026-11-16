@@ -10,21 +10,27 @@ mod prefs;
 mod scan;
 
 use openidea_plugin::{
-    Error, Invocation, Plugin, StatusItem, host, register_plugin,
+    Error, FileDecoration, Invocation, Plugin, StatusItem, host, register_plugin,
     views::{View, ViewEvent, Viewport, Views},
 };
 use prefs::{DEFAULT_EXCLUDES, Prefs};
 use scan::{
-    Acc, Report, count_lines, group_number, is_binary, language_of, relative_path, should_exclude,
+    Acc, FileRow, HIGH_RISK, Report, count_lines, group_number, is_binary, is_code, language_of,
+    measure, relative_path, risk_score, should_exclude,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 /// 与 plugin.toml 的 `[[contributes.views]] id` 一致。
 const VIEW: &str = "statistic";
-const KEY_STATE: &str = "jiusi.statistic:state";
+/// v2：0.2.0 的 Report 多了文件级结果，换键让旧缓存自然失效、升级后重扫一次。
+const KEY_STATE: &str = "jiusi.statistic:state:v2";
 /// 与 plugin.toml 的 `[[contributes.statusBar]] id` 一致。
 const STATUS_ID: &str = "jiusi.statistic.lines";
+/// 项目树标注的 set id；换名字等于放弃旧标注，别随便改。
+const DECORATION_SET: &str = "jiusi.statistic.risk";
+/// 最多给这么多个文件加项目树标记，避免几万次宿主调用。
+const MAX_DECORATED: usize = 150;
 /// 单次扫描最多处理的文件数，防止超大仓库卡住命令预算。
 const MAX_FILES: u32 = 20_000;
 /// 每处理这么多文件续一次长任务预算、检查一次取消。
@@ -53,10 +59,13 @@ impl Default for State {
 
 impl State {
     fn normalize(mut self) -> Self {
-        if self.group != "language" && self.group != "directory" {
+        if !matches!(self.group.as_str(), "language" | "directory" | "file") {
             self.group = "language".to_string();
         }
-        if !matches!(self.sort.as_str(), "lines" | "code" | "files" | "name") {
+        if !matches!(
+            self.sort.as_str(),
+            "lines" | "code" | "files" | "name" | "risk" | "complexity" | "todos"
+        ) {
             self.sort = "lines".to_string();
         }
         self
@@ -68,6 +77,8 @@ pub struct Statistic {
     state: State,
     /// 最近一次扫描的错误，展示在面板底部（不覆盖上次的统计结果）。
     error: Option<String>,
+    /// 项目根，用来把相对路径拼成绝对路径；插件重启后为空，重新扫描再填。
+    root: String,
     busy: bool,
     loaded: bool,
 }
@@ -145,7 +156,7 @@ impl Statistic {
     }
 
     /// 扫描第一个打开的项目。`Ok(None)` 表示用户取消了，保留上次结果。
-    fn run_scan(&self, prefs: &Prefs) -> Result<Option<Report>, String> {
+    fn run_scan(&self, prefs: &Prefs) -> Result<Option<(Report, String)>, String> {
         let projects = host::projects().map_err(friendly)?;
         let project = projects
             .first()
@@ -181,7 +192,14 @@ impl Statistic {
             }
             let spec = language_of(&rel);
             let lines = count_lines(&text, spec);
-            acc.add_file(&rel, spec.name, text.len(), lines);
+            let metrics = measure(&text, spec);
+            // 文档、配置、JSON 不算复杂度，风险分固定为 0，避免它们霸占「该重构」列表。
+            let score = if is_code(spec) {
+                risk_score(&metrics, lines, &prefs.limits)
+            } else {
+                0
+            };
+            acc.add_file(&rel, spec.name, text.len(), lines, &metrics, score);
         }
 
         task.report(total as u32, Some(total as u32), Some("统计完成"));
@@ -192,7 +210,55 @@ impl Statistic {
             .next()
             .unwrap_or("");
         let label = if name.is_empty() { "项目" } else { name };
-        Ok(Some(acc.finish(label, files.len() >= MAX_FILES as usize)))
+        Ok(Some((
+            acc.finish(label, files.len() >= MAX_FILES as usize),
+            root,
+        )))
+    }
+
+    /// 项目内相对路径 → 绝对路径；拿不到根目录时原样返回。
+    fn absolute(&self, rel: &str) -> String {
+        if self.root.is_empty() {
+            return rel.to_string();
+        }
+        format!(
+            "{}/{}",
+            self.root.trim_end_matches(['/', '\\']),
+            rel.trim_start_matches('/')
+        )
+    }
+
+    /// 把高风险文件标到项目树上：徽标最多两个字符，细节放 tooltip。
+    /// 每次扫描前先清空，避免删掉的文件留下幽灵标记。
+    fn apply_decorations(&self, report: &Report, prefs: &Prefs) {
+        let _ = host::clear_file_decorations(DECORATION_SET);
+        if !prefs.decorate_tree {
+            return;
+        }
+        for (marked, row) in report
+            .file_rows
+            .iter()
+            .filter(|r| r.score >= HIGH_RISK)
+            .enumerate()
+        {
+            if marked >= MAX_DECORATED {
+                break;
+            }
+            let (badge, style) = if row.score >= 70 {
+                ("!!", "error")
+            } else {
+                ("!", "warning")
+            };
+            let _ = host::set_file_decoration(
+                &self.absolute(&row.path),
+                DECORATION_SET,
+                &FileDecoration {
+                    badge: Some(badge.to_string()),
+                    style: style.to_string(),
+                    tooltip: Some(decorate_tooltip(row)),
+                },
+            );
+        }
     }
 
     fn scan(&mut self) {
@@ -205,7 +271,9 @@ impl Statistic {
         let result = self.run_scan(&prefs);
         self.busy = false;
         match result {
-            Ok(Some(report)) => {
+            Ok(Some((report, root))) => {
+                self.root = root;
+                self.apply_decorations(&report, &prefs);
                 self.state.report = Some(report);
                 self.error = None;
             }
@@ -240,7 +308,7 @@ impl Statistic {
             "refresh" => self.scan(),
             "setGroup" => {
                 if let Some(v) = msg.get("value").and_then(Value::as_str)
-                    && (v == "language" || v == "directory")
+                    && matches!(v, "language" | "directory" | "file")
                 {
                     self.state.group = v.to_string();
                     self.save();
@@ -249,12 +317,24 @@ impl Statistic {
             }
             "setSort" => {
                 if let Some(v) = msg.get("value").and_then(Value::as_str)
-                    && matches!(v, "lines" | "code" | "files" | "name")
+                    && matches!(
+                        v,
+                        "lines" | "code" | "files" | "name" | "risk" | "complexity" | "todos"
+                    )
                 {
                     self.state.sort = v.to_string();
                     self.save();
                     self.push();
                 }
+            }
+            "openFile" => {
+                let path = msg.get("path").and_then(Value::as_str).unwrap_or("");
+                if path.is_empty() {
+                    return;
+                }
+                let line = msg.get("line").and_then(Value::as_u64).unwrap_or(1);
+                // open-location 的行号是 0 基的。
+                let _ = host::open_location(path, line.saturating_sub(1) as u32, 0);
             }
             "setExclude" => {
                 if let Some(v) = msg.get("value").and_then(Value::as_str) {
@@ -284,6 +364,24 @@ fn friendly(e: Error) -> String {
     }
 }
 
+/// 项目树标记的悬停说明：一行说清「为什么它被标了」。
+fn decorate_tooltip(row: &FileRow) -> String {
+    let mut bits = vec![
+        format!("{} 行", group_number(row.total)),
+        format!("圈复杂度 {}", row.cc),
+    ];
+    if row.max_fn > 0 {
+        bits.push(format!("最长函数 {} 行 @L{}", row.max_fn, row.fn_line));
+    }
+    if row.depth > 0 {
+        bits.push(format!("嵌套 {}", row.depth));
+    }
+    if row.todos > 0 {
+        bits.push(format!("TODO {}", row.todos));
+    }
+    format!("{}｜风险 {}｜{}", row.path, row.score, bits.join(" · "))
+}
+
 impl Plugin for Statistic {
     fn run_command(
         &mut self,
@@ -298,10 +396,10 @@ impl Plugin for Statistic {
                 Ok(None)
             }
             "switch-group" => {
-                self.state.group = if self.state.group == "language" {
-                    "directory"
-                } else {
-                    "language"
+                self.state.group = match self.state.group.as_str() {
+                    "language" => "directory",
+                    "directory" => "file",
+                    _ => "language",
                 }
                 .to_string();
                 self.save();
@@ -399,5 +497,89 @@ mod tests {
         plugin.on_message("not json");
         plugin.on_message(r#"{"type":"unknown"}"#);
         assert_eq!(plugin.state.group, "language");
+    }
+
+    fn prefs_with_decorations(on: bool) -> Prefs {
+        Prefs {
+            excludes: Vec::new(),
+            max_file_bytes: 1024,
+            include_hidden: false,
+            show_status_bar: true,
+            decorate_tree: on,
+            limits: scan::Limits::default(),
+        }
+    }
+
+    fn row(path: &str, score: u32) -> FileRow {
+        FileRow {
+            path: path.to_string(),
+            lang: "Rust".to_string(),
+            total: 900,
+            code: 820,
+            comment: 40,
+            bytes: 30_000,
+            cc: 40,
+            depth: 5,
+            max_fn: 120,
+            fn_line: 12,
+            todos: 4,
+            score,
+        }
+    }
+
+    #[test]
+    fn only_high_risk_files_get_a_tree_badge() {
+        let host = openidea_plugin::mock::MockHost::install();
+        let plugin = Statistic {
+            root: "/project".to_string(),
+            loaded: true,
+            ..Statistic::default()
+        };
+        let report = Report {
+            file_rows: vec![row("src/a.rs", 80), row("src/b.rs", 20), row("src/c.rs", 50)],
+            ..Report::default()
+        };
+        plugin.apply_decorations(&report, &prefs_with_decorations(true));
+
+        let marks = host.file_decorations();
+        assert_eq!(marks.len(), 2);
+        let bad = marks
+            .get(&(DECORATION_SET.to_string(), "/project/src/a.rs".to_string()))
+            .expect("a.rs 应该被标记");
+        assert_eq!(bad.badge.as_deref(), Some("!!"));
+        assert_eq!(bad.style, "error");
+        assert!(bad.tooltip.as_deref().unwrap_or("").contains("圈复杂度 40"));
+    }
+
+    #[test]
+    fn decorations_can_be_switched_off_and_are_cleared() {
+        let host = openidea_plugin::mock::MockHost::install();
+        let plugin = Statistic {
+            root: "/project".to_string(),
+            loaded: true,
+            ..Statistic::default()
+        };
+        let report = Report {
+            file_rows: vec![row("src/a.rs", 80)],
+            ..Report::default()
+        };
+        plugin.apply_decorations(&report, &prefs_with_decorations(true));
+        assert_eq!(host.file_decorations().len(), 1);
+        // 关掉开关后要连上一次的标记一起清掉。
+        plugin.apply_decorations(&report, &prefs_with_decorations(false));
+        assert!(host.file_decorations().is_empty());
+    }
+
+    #[test]
+    fn clicking_a_file_opens_the_right_line() {
+        let _host = openidea_plugin::mock::MockHost::install();
+        let mut plugin = Statistic {
+            state: State::default(),
+            loaded: true,
+            ..Statistic::default()
+        };
+        plugin.on_message(r#"{"type":"openFile","path":"src/a.rs","line":12}"#);
+        // 不 panic 即可：open_location 走宿主，行号在这里是 0 基换算。
+        plugin.on_message(r#"{"type":"openFile","path":"","line":1}"#);
     }
 }

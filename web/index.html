@@ -8,13 +8,15 @@
   :root {
     --bg: #ffffff; --solid: #ffffff; --fg: #1f2328; --muted: #6b7280;
     --line: #e5e7eb; --accent: #2563eb; --accent-fg: #ffffff;
-    --soft: #f6f8fa; --bar: #2563eb; --danger: #c0392b;
+    --soft: #f6f8fa; --bar: #2563eb; --danger: #c0392b; --warn: #b45309;
+    --danger-soft: #fdecea; --warn-soft: #fdf3e2;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #1f1f1f; --solid: #2b2b2b; --fg: #e6e6e6; --muted: #9aa0a6;
       --line: #3a3a3a; --accent: #4c8dff; --accent-fg: #0b1220;
-      --soft: #292929; --bar: #4c8dff; --danger: #ff7b72;
+      --soft: #292929; --bar: #4c8dff; --danger: #ff7b72; --warn: #e3b341;
+      --danger-soft: #3a2320; --warn-soft: #3a3020;
     }
   }
   * { box-sizing: border-box; }
@@ -29,7 +31,7 @@
   #status { margin-left: auto; color: var(--muted); font-size: 12px; white-space: nowrap; }
   .toolbar { display: flex; flex-direction: column; align-items: stretch; gap: 8px;
     padding: 8px 12px; border-bottom: 1px solid var(--line); }
-  .toolbar-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .toolbar-row { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
   .toolbar-label { color: var(--muted); font-size: 12px; white-space: nowrap; }
   button, select, input { font: inherit; color: var(--fg); background: var(--solid);
     border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; }
@@ -46,6 +48,10 @@
     box-shadow: inset 0 0 0 1px var(--accent); }
   #sort { flex: 0 0 auto; }
   #exclude { flex: 1 1 auto; min-width: 0; }
+  .only-risk { display: inline-flex; align-items: center; gap: 5px; color: var(--muted);
+    font-size: 12px; white-space: nowrap; cursor: pointer; }
+  .only-risk input { padding: 0; margin: 0; accent-color: var(--danger); }
+  .only-risk.hide { display: none; }
   .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px; padding: 10px 12px; }
   .card { background: var(--soft); border: 1px solid var(--line); border-radius: 8px;
@@ -53,6 +59,7 @@
   .card .k { color: var(--muted); font-size: 11px; }
   .card .v { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .v.bad { color: var(--danger); }
   .table-wrap { flex: 0 1 auto; min-height: 0; max-height: 60vh; overflow: auto;
     border-top: 1px solid var(--line); }
   .table-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -60,22 +67,22 @@
   .table-wrap::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
   .table-wrap::-webkit-scrollbar-thumb:hover { background: var(--muted); }
   .table-wrap::-webkit-scrollbar-corner { background: transparent; }
-  table { width: 100%; min-width: 470px; table-layout: fixed;
+  table { width: 100%; min-width: 300px; table-layout: fixed;
     border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
   th, td { padding: 6px 4px; text-align: right; border-bottom: 1px solid var(--line);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  th:nth-child(1), td:nth-child(1) { width: 20%; text-align: left; position: sticky;
+  th:nth-child(1), td:nth-child(1) { width: 33%; text-align: left; position: sticky;
     left: 0; background: var(--bg); }
-  th:nth-child(2) { width: 9%; }
-  th:nth-child(3) { width: 12%; }
-  th:nth-child(4) { width: 12%; }
-  th:nth-child(5) { width: 10%; }
-  th:nth-child(6) { width: 10%; }
-  th:nth-child(7) { width: 13%; }
-  th:nth-child(8) { width: 14%; }
+  th:nth-child(2) { width: 11%; }
+  th:nth-child(3) { width: 14%; }
+  th:nth-child(4) { width: 14%; }
+  th:nth-child(5) { width: 13%; }
+  th:nth-child(6) { width: 15%; }
   th { color: var(--muted); font-weight: 500; position: sticky; top: 0;
     background: var(--bg); z-index: 1; }
   th:nth-child(1) { z-index: 2; }
+  tbody tr.clickable { cursor: pointer; }
+  tbody tr.clickable:hover td { background: var(--soft); }
   .name { display: inline-block; max-width: 100%; overflow: hidden;
     text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
   .pct-cell { position: relative; }
@@ -85,6 +92,26 @@
   .pct-num { position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
     color: var(--fg); font-size: 10px; line-height: 1;
     background: var(--bg); padding: 0 2px; border-radius: 2px; }
+  .risk { display: inline-block; min-width: 26px; padding: 0 5px; border-radius: 8px;
+    font-size: 11px; line-height: 16px; text-align: center; color: var(--muted);
+    background: transparent; }
+  .risk.warn { color: var(--warn); background: var(--warn-soft); font-weight: 600; }
+  .risk.bad { color: var(--danger); background: var(--danger-soft); font-weight: 600; }
+  .muted { color: var(--muted); }
+  .files { flex: 0 1 auto; min-height: 0; max-height: 60vh; overflow: auto;
+    border-top: 1px solid var(--line); display: none; }
+  .files::-webkit-scrollbar { width: 6px; }
+  .files::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+  .file { display: block; padding: 7px 12px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .file:hover { background: var(--soft); }
+  .file-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .file-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .file-name em { font-style: normal; color: var(--muted); }
+  .file-sub { margin-top: 2px; color: var(--muted); font-size: 11px; display: flex;
+    flex-wrap: wrap; gap: 1px 8px; font-variant-numeric: tabular-nums; }
+  .file-sub b { font-weight: 600; color: var(--fg); }
+  .file-sub .hot { color: var(--danger); }
   .empty { padding: 26px 12px; color: var(--muted); text-align: center; }
   footer { padding: 8px 12px; border-top: 1px solid var(--line); color: var(--muted);
     font-size: 12px; }
@@ -105,13 +132,20 @@
     <div class="segmented">
       <button data-group="language" class="on">按语言</button>
       <button data-group="directory">按目录</button>
+      <button data-group="file">按文件</button>
     </div>
     <select id="sort">
       <option value="lines">按总行数</option>
       <option value="code">按代码行</option>
       <option value="files">按文件数</option>
+      <option value="risk">按风险分</option>
+      <option value="complexity">按圈复杂度</option>
+      <option value="todos">按 TODO 数</option>
       <option value="name">按名称</option>
     </select>
+    <label class="only-risk hide" id="onlyRiskWrap">
+      <input type="checkbox" id="onlyRisk">只看高风险
+    </label>
   </div>
   <div class="toolbar-row">
     <label class="toolbar-label" for="exclude">排除目录</label>
@@ -122,17 +156,13 @@
 
 <div class="cards" id="cards"></div>
 
-<div class="table-wrap">
+<div class="table-wrap" id="tableWrap">
   <table>
-    <thead>
-      <tr>
-        <th>分组</th><th>文件</th><th>总行</th><th>代码</th>
-        <th>注释</th><th>空行</th><th>大小</th><th>占比</th>
-      </tr>
-    </thead>
+    <thead><tr id="head"></tr></thead>
     <tbody id="rows"></tbody>
   </table>
 </div>
+<div class="files" id="files"></div>
 
 <footer id="hint"></footer>
 <div class="spacer"></div>
@@ -148,12 +178,17 @@
     exclude: document.getElementById('exclude'),
     resetExclude: document.getElementById('resetExclude'),
     cards: document.getElementById('cards'),
+    head: document.getElementById('head'),
     rows: document.getElementById('rows'),
-    hint: document.getElementById('hint')
+    tableWrap: document.getElementById('tableWrap'),
+    files: document.getElementById('files'),
+    hint: document.getElementById('hint'),
+    onlyRisk: document.getElementById('onlyRisk'),
+    onlyRiskWrap: document.getElementById('onlyRiskWrap')
   };
   var state = {
     report: null, group: 'language', sort: 'lines', exclude: '',
-    busy: false, error: null, maxFiles: 20000
+    busy: false, error: null, maxFiles: 20000, onlyRisk: false
   };
 
   function send(obj) {
@@ -172,24 +207,36 @@
     if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
     return (n / 1048576).toFixed(1) + ' MB';
   }
-  function metric(rows, sort) {
-    return sort === 'files' ? rows.files : sort === 'code' ? rows.lines.code : rows.lines.total;
+  function isFileMode() { return state.group === 'file'; }
+
+  function metric(row, sort) {
+    if (sort === 'files') return row.files;
+    if (sort === 'code') return row.code != null ? row.code : row.lines.code;
+    if (sort === 'risk') return row.score != null ? row.score : row.cc;
+    if (sort === 'complexity') return row.cc;
+    if (sort === 'todos') return row.todos;
+    return row.total != null ? row.total : row.lines.total;
   }
   function sorted(rows, sort) {
     return (rows || []).slice().sort(function (a, b) {
-      if (sort === 'name') return String(a.key).localeCompare(String(b.key), 'zh-CN');
+      if (sort === 'name') {
+        return String(a.key || a.path).localeCompare(String(b.key || b.path), 'zh-CN');
+      }
       var d = (Number(metric(b, sort)) || 0) - (Number(metric(a, sort)) || 0);
-      return d || String(a.key).localeCompare(String(b.key), 'zh-CN');
+      return d || String(a.key || a.path).localeCompare(String(b.key || b.path), 'zh-CN');
     });
   }
+
+  var HEAD_GROUP = ['分组', '文件', '总行', '代码', '注释', '占比'];
 
   function render(s) {
     state = {
       report: s.report || null, group: s.group || 'language', sort: s.sort || 'lines',
       exclude: s.exclude || '', busy: !!s.busy, error: s.error || null,
-      maxFiles: s.maxFiles || 20000
+      maxFiles: s.maxFiles || 20000, onlyRisk: state.onlyRisk
     };
     var r = state.report;
+    var fileMode = isFileMode();
 
     el.status.textContent = state.busy ? '统计中…' : (state.error ? '有错误' : (r ? '本机缓存' : '未统计'));
     el.project.textContent = r ? r.project : '未连接';
@@ -202,63 +249,126 @@
     if (document.activeElement !== el.exclude) el.exclude.value = state.exclude;
     el.exclude.title = state.exclude || '排除的目录，逗号分隔';
     el.resetExclude.disabled = state.busy;
+    el.onlyRiskWrap.classList.toggle('hide', !fileMode);
+    el.onlyRisk.checked = state.onlyRisk;
+
+    el.head.innerHTML = HEAD_GROUP
+      .map(function (t) { return '<th>' + t + '</th>'; }).join('');
+    el.tableWrap.style.display = fileMode ? 'none' : '';
+    el.files.style.display = fileMode ? 'block' : 'none';
 
     if (!r) {
       el.cards.innerHTML = '<div class="empty">还没有统计结果，点「刷新」开始。</div>';
       el.rows.innerHTML = '';
-    } else {
-      var cards = [
-        ['文件', num(r.files)], ['总行数', num(r.lines.total)], ['代码行', num(r.lines.code)],
-        ['注释行', num(r.lines.comment)], ['空行', num(r.lines.blank)], ['大小', fmtBytes(r.bytes)]
-      ];
-      el.cards.innerHTML = cards.map(function (c) {
-        return '<div class="card"><div class="k">' + c[0] + '</div><div class="v">' + c[1] + '</div></div>';
-      }).join('');
+      el.files.innerHTML = '';
+      el.hint.textContent = '';
+      return;
+    }
 
+    var codeAndComment = (Number(r.lines.code) || 0) + (Number(r.lines.comment) || 0);
+    var commentPct = codeAndComment > 0
+      ? Math.round(((Number(r.lines.comment) || 0) / codeAndComment) * 100) : 0;
+    var highRisk = Number(r.highRisk) || 0;
+    var cards = [
+      ['文件', num(r.files), false],
+      ['总行数', num(r.lines.total), false],
+      ['代码行', num(r.lines.code), false],
+      ['高风险文件', num(highRisk), highRisk > 0],
+      ['注释率', commentPct + '%', false],
+      ['TODO / FIXME', num(r.todos), false]
+    ];
+    el.cards.innerHTML = cards.map(function (c) {
+      return '<div class="card"><div class="k">' + c[0] + '</div><div class="v' +
+        (c[2] ? ' bad' : '') + '">' + c[1] + '</div></div>';
+    }).join('');
+
+    if (fileMode) {
+      var files = sorted(r.fileRows, state.sort);
+      if (state.onlyRisk) files = files.filter(function (f) { return Number(f.score) >= 45; });
+      el.files.innerHTML = files.map(function (f) {
+        var score = Number(f.score) || 0;
+        var level = score >= 70 ? 'bad' : score >= 45 ? 'warn' : '';
+        var full = String(f.path);
+        var cut = full.lastIndexOf('/');
+        var dir = cut >= 0 ? full.slice(0, cut + 1) : '';
+        var name = cut >= 0 ? full.slice(cut + 1) : full;
+        var sub = ['<span><b>' + num(f.total) + '</b> 行</span>',
+          '<span>代码 <b>' + num(f.code) + '</b></span>',
+          '<span>CC <b' + (Number(f.cc) >= 30 ? ' class="hot"' : '') + '>' + num(f.cc) + '</b></span>'];
+        if (Number(f.maxFn) > 0) {
+          sub.push('<span>最长函数 <b>' + num(f.maxFn) + '</b> 行 @L' + num(f.fnLine) + '</span>');
+        }
+        if (Number(f.depth) > 0) sub.push('<span>嵌套 <b>' + f.depth + '</b></span>');
+        if (Number(f.todos) > 0) sub.push('<span>TODO <b>' + f.todos + '</b></span>');
+        var target = Number(f.fnLine) > 0 ? Number(f.fnLine) : 1;
+        return '<div class="file" data-path="' + esc(f.path) + '" data-line="' + target +
+          '" title="' + esc(full) + '｜点击跳到最长函数">' +
+          '<div class="file-top"><span class="file-name"><em>' + esc(dir) + '</em>' + esc(name) +
+          '</span><span class="risk ' + level + '">' + score + '</span></div>' +
+          '<div class="file-sub">' + sub.join('') + '</div></div>';
+      }).join('') || '<div class="empty">' +
+        (state.onlyRisk ? '没有高风险文件，说明这个项目还挺健康' : '没有可统计的文件') + '</div>';
+      el.rows.innerHTML = '';
+    } else {
       var rows = sorted(state.group === 'directory' ? r.dirs : r.groups, state.sort);
       var projectLines = Number(r.lines.total) || 0;
       el.rows.innerHTML = rows.map(function (g) {
         var p = projectLines > 0 ? ((Number(g.lines.total) || 0) / projectLines) * 100 : 0;
+        p = Math.min(100, p);
         var label = p > 0 && p < 0.5 ? '<1' : String(Math.round(p));
-        return '<tr><td title="' + esc(g.key) + '"><span class="name">' + esc(g.key) + '</span></td><td>' +
+        var info = g.key + '｜' + num(g.files) + ' 个文件 · 空行 ' + num(g.lines.blank) +
+          ' · ' + fmtBytes(g.bytes);
+        return '<tr title="' + esc(info) + '"><td><span class="name">' + esc(g.key) + '</span></td><td>' +
           num(g.files) + '</td><td>' +
           num(g.lines.total) + '</td><td>' + num(g.lines.code) + '</td><td>' +
-          num(g.lines.comment) + '</td><td>' + num(g.lines.blank) + '</td><td>' +
-          fmtBytes(g.bytes) + '</td><td class="pct-cell" title="占项目总行 ' + esc(label) + '%">' +
+          num(g.lines.comment) + '</td><td class="pct-cell" title="占项目总行 ' + esc(label) + '%">' +
           '<span class="pct-bar"><i style="width:' + Math.max(2, p) + '%"></i></span>' +
           '<span class="pct-num">' + esc(label) + '%</span></td></tr>';
-      }).join('') || '<tr><td colspan="8" class="empty">没有可统计的文件</td></tr>';
+      }).join('') || '<tr><td colspan="6" class="empty">没有可统计的文件</td></tr>';
     }
 
     var bits = [];
     if (state.error) bits.push('<span class="bad">' + esc(state.error) + '</span>');
-    if (r) {
-      if (r.skipped) bits.push('跳过 ' + num(r.skipped) + ' 个二进制或超大文件');
-      if (r.truncated) bits.push('已达到 ' + num(state.maxFiles) + ' 个文件上限，结果不完整');
+    bits.push('注释 ' + num(r.lines.comment) + ' 行 · 空行 ' + num(r.lines.blank) +
+      ' 行 · ' + fmtBytes(r.bytes));
+    if (r.skipped) bits.push('跳过 ' + num(r.skipped) + ' 个二进制或超大文件');
+    if (r.truncated) bits.push('已达到 ' + num(state.maxFiles) + ' 个文件上限，结果不完整');
+    if (fileMode && r.fileRowsTruncated) {
+      bits.push('文件过多，只保留风险最高的 5,000 个');
     }
-    bits.push('行分类为启发式识别，不解析字符串字面量；gitignore 排除的文件不计入。');
+    bits.push('复杂度为关键字计数的近似值（CC = 1 + 分支数），不做语法树分析；点文件行可跳到最长函数。');
     el.hint.innerHTML = bits.join(' · ');
+  }
+
+  function openFile(path, line) {
+    send({ type: 'openFile', path: path, line: Number(line) || 1 });
   }
 
   function fake() {
     var groups = [
-      { key: 'fingard-fefs-filehandling', files: 1302, lines: { total: 127011, code: 90751, comment: 20067, blank: 16193 }, bytes: 8074035 },
-      { key: 'Java', files: 1743, lines: { total: 196079, code: 125404, comment: 50326, blank: 20349 }, bytes: 8074035 },
-      { key: 'YAML', files: 900, lines: { total: 29623, code: 29268, comment: 299, blank: 56 }, bytes: 5976883 },
-      { key: 'HTML / XML', files: 226, lines: { total: 17999, code: 16421, comment: 584, blank: 994 }, bytes: 798515 },
-      { key: 'SQL', files: 179, lines: { total: 13199, code: 10781, comment: 1042, blank: 1376 }, bytes: 693862 }
+      { key: 'Java', files: 1743, lines: { total: 196079, code: 125404, comment: 50326, blank: 20349 }, bytes: 8074035, cc: 9210, todos: 41 },
+      { key: 'YAML', files: 900, lines: { total: 29623, code: 29268, comment: 299, blank: 56 }, bytes: 5976883, cc: 0, todos: 2 },
+      { key: 'HTML / XML', files: 226, lines: { total: 17999, code: 16421, comment: 584, blank: 994 }, bytes: 798515, cc: 0, todos: 0 },
+      { key: 'SQL', files: 179, lines: { total: 13199, code: 10781, comment: 1042, blank: 1376 }, bytes: 693862, cc: 0, todos: 3 }
     ];
     var dirs = [
-      { key: 'src', files: 8, lines: { total: 2600, code: 2000, comment: 360, blank: 240 }, bytes: 98000 },
-      { key: 'docs', files: 2, lines: { total: 376, code: 240, comment: 56, blank: 80 }, bytes: 15000 },
-      { key: '(根目录)', files: 2, lines: { total: 480, code: 360, comment: 40, blank: 80 }, bytes: 15000 }
+      { key: 'src', files: 8, lines: { total: 2600, code: 2000, comment: 360, blank: 240 }, bytes: 98000, cc: 120, todos: 5 },
+      { key: 'docs', files: 2, lines: { total: 376, code: 240, comment: 56, blank: 80 }, bytes: 15000, cc: 0, todos: 0 },
+      { key: '(根目录)', files: 2, lines: { total: 480, code: 360, comment: 40, blank: 80 }, bytes: 15000, cc: 8, todos: 1 }
+    ];
+    var fileRows = [
+      { path: 'src/main/java/com/demo/order/OrderServiceImpl.java', lang: 'Java', total: 1284, code: 980, comment: 210, bytes: 48210, cc: 42, depth: 5, maxFn: 156, fnLine: 88, todos: 3, score: 69 },
+      { path: 'src/main/java/com/demo/pricing/PriceCalculator.java', lang: 'Java', total: 902, code: 741, comment: 96, bytes: 33120, cc: 31, depth: 6, maxFn: 121, fnLine: 204, todos: 1, score: 62 },
+      { path: 'src/main/java/com/demo/report/ReportBuilder.java', lang: 'Java', total: 640, code: 520, comment: 70, bytes: 24010, cc: 18, depth: 4, maxFn: 88, fnLine: 130, todos: 0, score: 40 },
+      { path: 'src/main/java/com/demo/util/DateUtils.java', lang: 'Java', total: 288, code: 210, comment: 48, bytes: 9200, cc: 9, depth: 3, maxFn: 34, fnLine: 44, todos: 0, score: 7 }
     ];
     var defaults = '.git,node_modules,target,dist,build,vendor';
     return {
       report: {
-        project: 'demo-project', files: 12,
-        lines: { total: 3456, code: 2600, comment: 456, blank: 400 },
-        bytes: 128000, skipped: 18, truncated: false, groups: groups, dirs: dirs
+        project: 'demo-project', files: 3048,
+        lines: { total: 256900, code: 181874, comment: 52251, blank: 22775 },
+        bytes: 15543295, skipped: 18, truncated: false, groups: groups, dirs: dirs,
+        fileRows: fileRows, fileRowsTruncated: false, highRisk: 2, cc: 13280, todos: 51
       },
       group: state.group, sort: state.sort,
       exclude: state.exclude || defaults,
@@ -280,6 +390,18 @@
   el.sort.addEventListener('change', function () { send({ type: 'setSort', value: el.sort.value }); });
   el.exclude.addEventListener('change', function () { send({ type: 'setExclude', value: el.exclude.value }); });
   el.resetExclude.addEventListener('click', function () { send({ type: 'resetExclude' }); });
+  el.onlyRisk.addEventListener('change', function () {
+    state.onlyRisk = el.onlyRisk.checked;
+    render({
+      report: state.report, group: state.group, sort: state.sort, exclude: state.exclude,
+      busy: state.busy, error: state.error, maxFiles: state.maxFiles
+    });
+  });
+  document.addEventListener('click', function (e) {
+    var hit = e.target.closest ? e.target.closest('.file, tr.clickable') : null;
+    if (!hit) return;
+    openFile(hit.getAttribute('data-path'), hit.getAttribute('data-line'));
+  });
   Array.prototype.forEach.call(document.querySelectorAll('.segmented button'), function (b) {
     b.addEventListener('click', function () {
       send({ type: 'setGroup', value: b.getAttribute('data-group') });

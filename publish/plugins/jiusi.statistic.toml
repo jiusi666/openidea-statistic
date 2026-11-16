@@ -10,3 +10,8 @@ sha256 = "3d5a1a01a8a839d8e1e9b495e82d80d315e468e296f5202440064929e0cb9c56"
 version = "0.1.1"
 package = "https://github.com/jiusi666/openidea-statistic/releases/download/v0.1.1/jiusi.statistic-0.1.1.oiplugin"
 sha256 = "db5ded1708ca3a87e99a682140bf32ea8bc8e168a819957e33b1bd5d713d826b"
+
+[[versions]]
+version = "0.2.0"
+package = "https://github.com/jiusi666/openidea-statistic/releases/download/v0.2.0/jiusi.statistic-0.2.0.oiplugin"
+sha256 = "42c1edfd5e2d32e48bd63e62d055524f50a24b2ff24413d6d8f107d323d443a5"

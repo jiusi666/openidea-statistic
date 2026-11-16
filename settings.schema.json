@@ -21,6 +21,32 @@
       "type": "boolean",
       "title": "在状态栏显示总行数",
       "default": true
+    },
+    "decorateTree": {
+      "type": "boolean",
+      "title": "在项目树标记高风险文件（感叹号徽标，悬停看详情）",
+      "default": true
+    },
+    "warnFileLines": {
+      "type": "number",
+      "title": "超长文件阈值（代码行）",
+      "default": 800,
+      "minimum": 50,
+      "maximum": 200000
+    },
+    "warnFunctionLines": {
+      "type": "number",
+      "title": "超长函数阈值（行）",
+      "default": 60,
+      "minimum": 5,
+      "maximum": 5000
+    },
+    "warnComplexity": {
+      "type": "number",
+      "title": "高复杂度阈值（单文件圈复杂度）",
+      "default": 15,
+      "minimum": 1,
+      "maximum": 500
     }
   }
 }

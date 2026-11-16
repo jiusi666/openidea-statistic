@@ -1,15 +1,16 @@
 # 上架流程（jiusi.statistic）
 
-当前版本 `0.1.0` 已在本机完成构建、打包、签名与校验。
+当前版本 `0.2.0` 已在本机完成构建、打包、签名与校验；`0.1.1` 的产物与摘要留在下表的旧记录里，两版都在 registry 的版本列表中。
 
 ## 已验证的本机产物
 
 | 项 | 值 |
 | --- | --- |
-| 包 | `dist/jiusi.statistic-0.1.0.oiplugin`（115 KB） |
-| WASM | `dist/plugin.wasm`（280 KB，`wasm32-wasip2` 组件） |
-| BLAKE3 摘要 | `2a29c7f44e22f188791c0a39b22759483e96829f91e60e07662bca8d00cf4ce6` |
-| 包 sha256 | `3d5a1a01a8a839d8e1e9b495e82d80d315e468e296f5202440064929e0cb9c56` |
+| 包 | `dist/jiusi.statistic-0.2.0.oiplugin`（137 KB） |
+| WASM | `dist/plugin.wasm`（330 KB，`wasm32-wasip2` 组件） |
+| BLAKE3 摘要 | `6d220e3e36c3bcb004efe5eacdcd8541dd8aac79d6efbfb2422c6b3e66914b13` |
+| 包 sha256 | `42c1edfd5e2d32e48bd63e62d055524f50a24b2ff24413d6d8f107d323d443a5` |
+| 上一版 | `0.1.1`：sha256 `db5ded1708ca3a87e99a682140bf32ea8bc8e168a819957e33b1bd5d713d826b` |
 
 面板排版调整后重新打过包，上面是**当前**包的摘要；如果之前已经上传过 Release 附件，必须替换成这个新包，再更新 registry 条目里的 sha256。
 | 签名者 | `jiusi`，公钥与官方 registry 的 `publishers/jiusi.toml` 一致 |
@@ -29,9 +30,9 @@ cargo +stable-x86_64-pc-windows-gnu test --manifest-path "$P/Cargo.toml"
 cargo +stable-x86_64-pc-windows-gnu build --release --target wasm32-wasip2 --manifest-path "$P/Cargo.toml"
 cp "$P/target/wasm32-wasip2/release/openidea_plugin_statistic.wasm" "$P/dist/plugin.wasm"
 python "$P/scripts/oiplugin.py" check "$P"
-python "$P/scripts/oiplugin.py" pack "$P" --key "$P/.keys/jiusi.key" --publisher jiusi \
-  --out "$P/dist/jiusi.statistic-0.1.0.oiplugin"
-python "$P/scripts/oiplugin.py" verify "$P/dist/jiusi.statistic-0.1.0.oiplugin"
+python "$P/scripts/oiplugin.py" pack "$P" --key "$P/../openidea-stock-watch/.keys/jiusi.key" --publisher jiusi \
+  --out "$P/dist/jiusi.statistic-0.2.0.oiplugin"
+python "$P/scripts/oiplugin.py" verify "$P/dist/jiusi.statistic-0.2.0.oiplugin"
 python "$P/scripts/local_install.py" status --project "$P"
 ```
 
@@ -40,9 +41,8 @@ python "$P/scripts/local_install.py" status --project "$P"
 
 ## 本地验收
 
-`Settings › Plugins › Install from Disk` 选 `dist/jiusi.statistic-0.1.0.oiplugin`，
-确认三件事：版本号是 `0.1.0`、右侧「代码统计」面板能出数据、安装弹窗只问
-`project.read` 和 `storage` 两项低风险权限。
+`Settings › Plugins › Install from Disk` 选 `dist/jiusi.statistic-0.2.0.oiplugin`，
+确认四件事：版本号是 `0.2.0`、右侧「代码统计」面板能出数据、切「按文件」有风险分且项目树有徽标、安装弹窗只问 `project.read` 和 `storage` 两项低风险权限。
 
 开发期想边改边看，用 `python scripts/local_install.py link --apply --project .`；
 **出包前务必 `clean --apply` 摘掉链接**，否则链接式开发插件会和安装包抢同一个 id。
@@ -50,14 +50,13 @@ python "$P/scripts/local_install.py" status --project "$P"
 ## 上架步骤
 
 1. `git push` 源码到 `jiusi666/openidea-statistic`。
-2. `git tag v0.1.0 && git push origin v0.1.0`。
-3. 网页发 Release：tag 选 `v0.1.0`，上传
-   `dist/jiusi.statistic-0.1.0.oiplugin`（**文件名不能改**），必须点 Publish，
+2. `git tag v0.2.0 && git push origin v0.2.0`。
+3. 网页发 Release：tag 选 `v0.2.0`，上传
+   `dist/jiusi.statistic-0.2.0.oiplugin`（**文件名不能改**），必须点 Publish，
    不能存草稿。
 4. `python scripts/check_release.py` 下载附件、核 sha256、验签、比对本地字节。
 5. `open_pr.py` 会同时带上 `publishers/jiusi.toml` 和 `plugins/jiusi.statistic.toml`；
-   本地的 publisher 条目与官方逐字一致，所以 PR 的实际差异只有新增的插件条目。正文用
-   `publish/PR.md`。
+   本地的 publisher 条目与官方逐字一致，所以 PR 的实际差异只有新增的插件条目。正文用 `publish/PR.md`（首次上架）或 `publish/UPDATE-PR.md`（追加版本）。
 6. `python scripts/open_pr.py --dry-run` 看计划，再 `python scripts/open_pr.py` 提 PR。
    CI 会下载附件、核 sha256、验签并跑 `openidea-plugin check`。
 

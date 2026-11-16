@@ -1,31 +1,39 @@
-# 更新 PR：jiusi.statistic → 0.1.1
+# 更新 PR：jiusi.statistic → 0.2.0
 
 > 提给 [l0ng-ai/openidea-plugins](https://github.com/l0ng-ai/openidea-plugins) 的更新 PR 正文。
 
 ## 标题
 
 ```
-Update jiusi.statistic to 0.1.1
+Update jiusi.statistic to 0.2.0
 ```
 
 ## 正文
 
 ```markdown
-### jiusi.statistic → 0.1.1
+### jiusi.statistic → 0.2.0
 
-Adds `0.1.1` to the version list; the earlier `[[versions]]` tables stay published for anyone on an older `engines.openidea`. Release:
-https://github.com/jiusi666/openidea-statistic/releases/tag/v0.1.1
+Adds `0.2.0` to the version list. `0.1.1` stays published, so anyone whose `engines.openidea` cannot load the new build keeps getting it. This release keeps `engines.openidea = "^1.4"`; it uses no new capability and no 1.5+ interface.
+
+Release: https://github.com/jiusi666/openidea-statistic/releases/tag/v0.2.0
 
 #### What changed
 
-- Plugin description now invites contributions and lists the Java tech QQ group 700072697.
-- The entry declares `suggest` so the marketplace offers the plugin under "Suggested for This Project" for projects with build files such as `pom.xml`, `package.json` or `Cargo.toml`.
-- README updates: listing status, marketplace install, roadmap and contact.
-- Functionality and capabilities are unchanged (`project.read` + `storage`).
+Before, the plugin only counted lines. It now also tells you which file to refactor:
 
-This is listing metadata only, not a new capability.
+- **Per-file view** with total/code lines, an approximate cyclomatic complexity (`CC = 1 + if/for/while/case/catch/&&/||`), longest function length and start line, max nesting depth, TODO/FIXME count, and a weighted 0–100 risk score. The file list sorts by risk and can be filtered to high-risk files only.
+- **Project tree badges** via `decorations.set_file`: high-risk files get a `!!` (≥70) or `!` (≥45) badge whose tooltip spells out lines, CC, longest function and TODO count. Cleared and re-applied on every scan, capped at 150 files, can be switched off in settings.
+- **Click to jump**: clicking a file row calls `open-location` at the longest function's start line.
+- Language/directory summaries also carry CC and TODO totals; the overview cards show file count, total/code lines, high-risk count, comment ratio and TODO count.
+- New settings: `decorateTree`, `warnFileLines` (800), `warnFunctionLines` (60), `warnComplexity` (15).
+
+The complexity numbers are deliberately described as text-level approximations — no AST, no parser; strings and trailing comments are stripped before counting. Documentation, config and JSON files are excluded from complexity and scoring.
+
+#### Capabilities
+
+Unchanged: `project.read` + `storage`, both Low. Tree badges are part of `decorations`, which requires only `project.read`. No `net:`, no `process:`, no `editor.write`, no `vcs.*`. Nothing leaves the machine.
 
 #### Package
 
-`jiusi.statistic-0.1.1.oiplugin`, built from the source in this repository for plugin API `^1.4`, signed by publisher `jiusi`. Capabilities are unchanged. No new `net:`, `process:` or other high-risk capability is requested.
+`jiusi.statistic-0.2.0.oiplugin`, 137 KB, built from the source in this repository for plugin API `^1.4`, signed by publisher `jiusi`, sha256 `42c1edfd5e2d32e48bd63e62d055524f50a24b2ff24413d6d8f107d323d443a5`.
 ```
