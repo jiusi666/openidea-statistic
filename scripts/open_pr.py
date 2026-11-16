@@ -130,6 +130,7 @@ def main() -> None:
     ap.add_argument("--owner", help="你的 GitHub 登录名（默认从 origin 推）")
     ap.add_argument("--publisher", help="发布者前缀（默认取 id 的第一段）")
     ap.add_argument("--branch", help="分支名（默认 add-<id>）")
+    ap.add_argument("--message", help="commit 标题（默认 Add <id>）")
     args = ap.parse_args()
 
     manifest = tomllib.loads((ROOT / "plugin.toml").read_text(encoding="utf-8"))
@@ -156,10 +157,11 @@ def main() -> None:
         doc = pr_doc.read_text(encoding="utf-8")
         title = block(doc, "## 标题") or f"Add {plugin_id}"
         body = block(doc, "## 正文", "markdown")
+        # 只看真正的占位标记；正文里「TODO 数量」「TODO/FIXME」是功能描述。
         leftovers = [
             line.strip()
             for line in f"{title}\n{body}".splitlines()
-            if "TODO" in line
+            if re.search(r"<TODO>|TODO\s*[:：]|TODO\s*[（(]|待补|TBD", line)
         ]
         if leftovers:
             print("  [x] publish/PR.md 的标题或正文里还有占位：")
@@ -258,7 +260,8 @@ def main() -> None:
     if not run(["git", "status", "--porcelain"], cwd=work).stdout.strip():
         die("没有差异：fork 里已经是这份内容了")
 
-    message = f"Add {plugin_id}\n\nPublisher {publisher} and the {version} entry for {plugin_id}."
+    headline = args.message or f"Add {plugin_id}"
+    message = f"{headline}\n\nPublisher {publisher} and the {version} entry for {plugin_id}."
     run(
         [
             "git",

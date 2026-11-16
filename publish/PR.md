@@ -1,71 +1,39 @@
-# PR：新增插件 jiusi.statistic
+# PR：更新 jiusi.statistic → 0.2.0
 
-> 提给 [l0ng-ai/openidea-plugins](https://github.com/l0ng-ai/openidea-plugins) 的 PR 正文草稿。
-> publisher `jiusi` 已在 registry 中，本地 `publishers/jiusi.toml` 与官方条目逐字一致，
-> 所以 PR 的实际差异只有新增的 `plugins/jiusi.statistic.toml`。
-> 顺序：先把源码推到 `jiusi666/openidea-statistic`，发 `v0.1.0` Release 并上传
-> `jiusi.statistic-0.1.0.oiplugin`，再跑 `python scripts/open_pr.py`。以上三步均已执行。
+> 提给 [l0ng-ai/openidea-plugins](https://github.com/l0ng-ai/openidea-plugins) 的更新 PR 正文。
 
 ## 标题
 
 ```
-Add jiusi.statistic — project line counts by language and directory
+Update jiusi.statistic to 0.2.0
 ```
 
 ## 正文
 
 ```markdown
-### What it is
+### jiusi.statistic → 0.2.0
 
-`jiusi.statistic` is a side panel that counts a project's code: file count,
-total / code / comment / blank lines and bytes, grouped by language or by
-top-level directory. It sorts each group, shows a relative bar, and keeps the
-last result locally so opening the panel doesn't rescan the whole tree.
+Adds `0.2.0` to the version list. `0.1.1` stays published, so anyone whose `engines.openidea` cannot load the new build keeps getting it. This release keeps `engines.openidea = "^1.4"`; it uses no new capability and no 1.5+ interface.
 
-Scans run in a cancellable task, skip binary and oversized files, and stop at
-20,000 files with a visible "incomplete" warning. Line classification is
-heuristic (comment prefixes and block-comment markers, no string-literal
-parsing) — it is a project-size overview, not an audit tool.
+Release: https://github.com/jiusi666/openidea-statistic/releases/tag/v0.2.0
 
-Source: https://github.com/jiusi666/openidea-statistic (Apache-2.0).
+#### What changed
 
-### Capabilities
+Before, the plugin only counted lines. It now also tells you which file to refactor:
 
-`project.read` (Low, required) — the only way the plugin sees the project:
-`Project::find_files("**/*", 20000)`, `Project::read_file`, `Project::root`.
-Read-only; `write_file` is never called and no path outside the project is read.
+- **Per-file view** with total/code lines, an approximate cyclomatic complexity (`CC = 1 + if/for/while/case/catch/&&/||`), longest function length and start line, max nesting depth, TODO/FIXME count, and a weighted 0–100 risk score. The file list sorts by risk and can be filtered to high-risk files only.
+- **Project tree badges** via `decorations.set_file`: high-risk files get a `!!` (≥70) or `!` (≥45) badge whose tooltip spells out lines, CC, longest function and TODO count. Cleared and re-applied on every scan, capped at 150 files, can be switched off in settings.
+- **Click to jump**: clicking a file row calls `open-location` at the longest function's start line.
+- Language/directory summaries also carry CC and TODO totals; the overview cards show file count, total/code lines, high-risk count, comment ratio and TODO count.
+- New settings: `decorateTree`, `warnFileLines` (800), `warnFunctionLines` (60), `warnComplexity` (15).
 
-`storage` (Low, required) — the last scan result and the panel's group / sort /
-exclude-directory overrides, on this machine only, removed on uninstall.
+The complexity numbers are deliberately described as text-level approximations — no AST, no parser; strings and trailing comments are stripped before counting. Documentation, config and JSON files are excluded from complexity and scoring.
 
-No `net:`, no `process:`, no `editor.write`, no `vcs.*`, no `fs.*`, no
-`clipboard`. The panel runs in a sandboxed web view with no network of its own;
-all data is pushed from the WASM side. Nothing leaves the machine.
+#### Capabilities
 
-### Verification
+Unchanged: `project.read` + `storage`, both Low. Tree badges are part of `decorations`, which requires only `project.read`. No `net:`, no `process:`, no `editor.write`, no `vcs.*`. Nothing leaves the machine.
 
-- `cargo +stable-x86_64-pc-windows-gnu test` — 19 unit tests: line
-  classification (blank / line comments / spanning and inline block comments),
-  language mapping, binary detection, path normalisation and exclusion,
-  language/directory aggregation, saved-state normalisation, snapshot shape,
-  message handling and storage round-trips.
-- `cargo +stable-x86_64-pc-windows-gnu build --release --target wasm32-wasip2`
-  — the shipped `dist/plugin.wasm` is a WebAssembly **component**.
-- `python scripts/oiplugin.py check .` — manifest, contributions, icons and
-  component magic all pass.
-- `python scripts/oiplugin.py verify dist/jiusi.statistic-0.1.0.oiplugin` —
-  digest recomputed and Ed25519 signature verified against publisher `jiusi`.
-- `node --check` on the panel's inline script — syntax clean.
-- `python scripts/local_install.py status --project .` — no conflicting
-  Installed / Linked / Dev copy of this id.
+#### Package
 
-### Notes
-
-- Built by hand from this source with `wasm32-wasip2` + component model
-  (`engines.openidea = "^1.4"`), no minified or generated-only code; the UI is a
-  single HTML file with no external resources.
-- Package: `jiusi.statistic-0.1.0.oiplugin`, sha256
-  `3d5a1a01a8a839d8e1e9b495e82d80d315e468e296f5202440064929e0cb9c56`.
-- The signing key is the one already listed in `publishers/jiusi.toml`; no new
-  publisher entry is needed.
+`jiusi.statistic-0.2.0.oiplugin`, 137 KB, built from the source in this repository for plugin API `^1.4`, signed by publisher `jiusi`, sha256 `e34cad90901341552f8ff1bb0c8b1670c5227a4118bdde0191d90bebedd33533`.
 ```
