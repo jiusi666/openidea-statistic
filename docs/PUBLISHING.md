@@ -1,15 +1,15 @@
 # 上架流程（jiusi.statistic）
 
-当前版本 `0.2.0` 已在本机完成构建、打包、签名与校验；`0.1.1` 的产物与摘要留在下表的旧记录里，两版都在 registry 的版本列表中。
+当前版本 `0.2.1` 已在本机完成构建、打包、签名与校验，并已发 Release 与更新 PR；registry 里列 `0.1.0` / `0.1.1` / `0.2.1`（`0.2.0` 有 review 指出的缺陷，从未合并，已被 `0.2.1` 取代）。
 
 ## 已验证的本机产物
 
 | 项 | 值 |
 | --- | --- |
-| 包 | `dist/jiusi.statistic-0.2.0.oiplugin`（137 KB） |
+| 包 | `dist/jiusi.statistic-0.2.1.oiplugin`（141014 字节） |
 | WASM | `dist/plugin.wasm`（330 KB，`wasm32-wasip2` 组件） |
-| BLAKE3 摘要 | `4777bdb5efe01dfaa84171ebd828d9623859bcdeb35c026e39c04cbb27b105ab` |
-| 包 sha256 | `e34cad90901341552f8ff1bb0c8b1670c5227a4118bdde0191d90bebedd33533` |
+| BLAKE3 摘要 | `21116abbbc98da92bdc72ce8a9a184ef5b3f5227ed320acdb4f6870a92255764` |
+| 包 sha256 | `b79fe50bef0f70bcb1df887d37ba1bbd2862c2a0ea3d139c96d2c800b5969b79` |
 | 上一版 | `0.1.1`：sha256 `db5ded1708ca3a87e99a682140bf32ea8bc8e168a819957e33b1bd5d713d826b` |
 
 面板排版调整后重新打过包，上面是**当前**包的摘要；如果之前已经上传过 Release 附件，必须替换成这个新包，再更新 registry 条目里的 sha256。
@@ -31,8 +31,8 @@ cargo +stable-x86_64-pc-windows-gnu build --release --target wasm32-wasip2 --man
 cp "$P/target/wasm32-wasip2/release/openidea_plugin_statistic.wasm" "$P/dist/plugin.wasm"
 python "$P/scripts/oiplugin.py" check "$P"
 python "$P/scripts/oiplugin.py" pack "$P" --key "$P/../openidea-stock-watch/.keys/jiusi.key" --publisher jiusi \
-  --out "$P/dist/jiusi.statistic-0.2.0.oiplugin"
-python "$P/scripts/oiplugin.py" verify "$P/dist/jiusi.statistic-0.2.0.oiplugin"
+  --out "$P/dist/jiusi.statistic-0.2.1.oiplugin"
+python "$P/scripts/oiplugin.py" verify "$P/dist/jiusi.statistic-0.2.1.oiplugin"
 python "$P/scripts/local_install.py" status --project "$P"
 ```
 
@@ -41,8 +41,8 @@ python "$P/scripts/local_install.py" status --project "$P"
 
 ## 本地验收
 
-`Settings › Plugins › Install from Disk` 选 `dist/jiusi.statistic-0.2.0.oiplugin`，
-确认四件事：版本号是 `0.2.0`、右侧「代码统计」面板能出数据、切「按文件」有风险分且项目树有徽标、安装弹窗只问 `project.read` 和 `storage` 两项低风险权限。
+`Settings › Plugins › Install from Disk` 选 `dist/jiusi.statistic-0.2.1.oiplugin`，
+确认四件事：版本号是 `0.2.1`、右侧「代码统计」面板能出数据、切「按文件」有风险分且项目树有徽标、安装弹窗只问 `project.read` 和 `storage` 两项低风险权限。
 
 开发期想边改边看，用 `python scripts/local_install.py link --apply --project .`；
 **出包前务必 `clean --apply` 摘掉链接**，否则链接式开发插件会和安装包抢同一个 id。
@@ -50,9 +50,9 @@ python "$P/scripts/local_install.py" status --project "$P"
 ## 上架步骤
 
 1. `git push` 源码到 `jiusi666/openidea-statistic`。
-2. `git tag v0.2.0 && git push origin v0.2.0`。
-3. 网页发 Release：tag 选 `v0.2.0`，上传
-   `dist/jiusi.statistic-0.2.0.oiplugin`（**文件名不能改**），必须点 Publish，
+2. `git tag v0.2.1 && git push origin v0.2.1`。
+3. 网页发 Release：tag 选 `v0.2.1`，上传
+   `dist/jiusi.statistic-0.2.1.oiplugin`（**文件名不能改**），必须点 Publish，
    不能存草稿。
 4. `python scripts/check_release.py` 下载附件、核 sha256、验签、比对本地字节。
 5. `open_pr.py` 会同时带上 `publishers/jiusi.toml` 和 `plugins/jiusi.statistic.toml`；
@@ -60,5 +60,5 @@ python "$P/scripts/local_install.py" status --project "$P"
 6. `python scripts/open_pr.py --dry-run` 看计划，再 `python scripts/open_pr.py` 提 PR。
    CI 会下载附件、核 sha256、验签并跑 `openidea-plugin check`。
 
-之后发新版（0.1.1、0.2.0…）改用 `openidea-plugin-update` skill：推进版本号、
+之后发新版（0.1.1、0.2.1…）改用 `openidea-plugin-update` skill：推进版本号、
 在条目里追加 `[[versions]]`（保留旧版）、只改条目的更新 PR。
