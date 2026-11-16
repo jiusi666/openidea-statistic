@@ -90,16 +90,26 @@ def api(tok: str, path: str, method: str = "GET", body: dict | None = None):
     if body is not None:
         req.add_header("Content-Type", "application/json")
         req.data = json.dumps(body).encode()
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            raw = resp.read()
-            return resp.status, json.loads(raw) if raw else {}
-    except urllib.error.HTTPError as exc:
-        raw = exc.read()
+    # 这台机器到 api.github.com 会间歇性断连（SSL EOF / reset），
+    # 读请求重试几次；写请求（POST 建 PR）在上层用 422 兜住重复。
+    last: Exception | None = None
+    for attempt in range(5):
         try:
-            return exc.code, json.loads(raw) if raw else {}
-        except json.JSONDecodeError:
-            return exc.code, {"raw": raw.decode("utf-8", "replace")}
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                raw = resp.read()
+                return resp.status, json.loads(raw) if raw else {}
+        except urllib.error.HTTPError as exc:
+            raw = exc.read()
+            try:
+                return exc.code, json.loads(raw) if raw else {}
+            except json.JSONDecodeError:
+                return exc.code, {"raw": raw.decode("utf-8", "replace")}
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            last = exc
+            if attempt < 4:
+                print(f"  网络抖动，{3 * (attempt + 1)} 秒后重试：{type(exc).__name__}")
+                time.sleep(3 * (attempt + 1))
+    die(f"请求失败：{last}")
 
 
 def block(text: str, heading: str, lang: str = "") -> str:
