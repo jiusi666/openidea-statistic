@@ -35,5 +35,5 @@ Unchanged: `project.read` + `storage`, both Low. Tree badges are part of `decora
 
 #### Package
 
-`jiusi.statistic-0.2.0.oiplugin`, 137 KB, built from the source in this repository for plugin API `^1.4`, signed by publisher `jiusi`, sha256 `42c1edfd5e2d32e48bd63e62d055524f50a24b2ff24413d6d8f107d323d443a5`.
+`jiusi.statistic-0.2.0.oiplugin`, 137 KB, built from the source in this repository for plugin API `^1.4`, signed by publisher `jiusi`, sha256 `e34cad90901341552f8ff1bb0c8b1670c5227a4118bdde0191d90bebedd33533`.
 ```

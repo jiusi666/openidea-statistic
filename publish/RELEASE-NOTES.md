@@ -27,4 +27,4 @@
 - 从包：`Settings › Plugins › Install from Disk` 选 `jiusi.statistic-0.2.0.oiplugin`。
 - 装完确认三件事：版本号是 `0.2.0`；切到「按文件」能看到风险分与指标；能力弹窗只问 `project.read` + `storage`。
 
-Release 附件：`jiusi.statistic-0.2.0.oiplugin`（137 KB，sha256 `42c1edfd5e2d32e48bd63e62d055524f50a24b2ff24413d6d8f107d323d443a5`），源码 Apache-2.0。
+Release 附件：`jiusi.statistic-0.2.0.oiplugin`（137 KB，sha256 `e34cad90901341552f8ff1bb0c8b1670c5227a4118bdde0191d90bebedd33533`），源码 Apache-2.0。

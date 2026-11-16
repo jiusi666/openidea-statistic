@@ -8,8 +8,8 @@
 | --- | --- |
 | 包 | `dist/jiusi.statistic-0.2.0.oiplugin`（137 KB） |
 | WASM | `dist/plugin.wasm`（330 KB，`wasm32-wasip2` 组件） |
-| BLAKE3 摘要 | `6d220e3e36c3bcb004efe5eacdcd8541dd8aac79d6efbfb2422c6b3e66914b13` |
-| 包 sha256 | `42c1edfd5e2d32e48bd63e62d055524f50a24b2ff24413d6d8f107d323d443a5` |
+| BLAKE3 摘要 | `4777bdb5efe01dfaa84171ebd828d9623859bcdeb35c026e39c04cbb27b105ab` |
+| 包 sha256 | `e34cad90901341552f8ff1bb0c8b1670c5227a4118bdde0191d90bebedd33533` |
 | 上一版 | `0.1.1`：sha256 `db5ded1708ca3a87e99a682140bf32ea8bc8e168a819957e33b1bd5d713d826b` |
 
 面板排版调整后重新打过包，上面是**当前**包的摘要；如果之前已经上传过 Release 附件，必须替换成这个新包，再更新 registry 条目里的 sha256。
